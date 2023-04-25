@@ -1,27 +1,91 @@
 import fs from 'fs';
 
-const path = './files/products.json';
-
 export default class ProductManager {
+    constructor(path) {
+        this.path = path
+    }
 
-    getProducts = async() =>{
-
-        if(fs.existsSync(path)){
-            const data = await fs.promises.readFile(path, 'utf-8');
-            const users = JSON.parse(data);
-            return users;
-        }else {
-            return [];
+    async getProduct() {
+        try {
+            const objs = await fs.promises.readFile(this.path, 'utf-8')
+            return JSON.parse(objs)
+        } catch (error) {
+            console.log("Error al leer el archivo.", error);
+            return []
         }
     }
-    getProduct = async(id) =>{
-        const products = await this.getProducts();
-        
-        const product = products.filter((product)=>{
-            return product.id == id
-        })
 
-        return product
+    async addProduct(obj) {
+        const objs = await this.getProduct();
+        let newId;
 
+        if (objs.length == 0) {
+            newId = 1;
+        } else {
+            newId = objs[objs.length - 1].id + 1;
+        }
+
+        const newObj = { ...obj, id: newId }
+        objs.push(newObj);
+        try {
+            await fs.promises.writeFile(this.path, JSON.stringify(objs, null, 2));
+            return newObj
+        } catch (error) {
+            console.log(`Error al añadir producto ${error}`)
+        }
+    }
+
+    async updateProd(id, newProd) {
+
+        const productos = await this.getProduct()
+
+        const idProd = parseInt(id)
+        const productoAModificar = productos.find(producto => producto.id === idProd);
+
+        if (!productoAModificar) {
+            return `Producto no disponible`
+        }
+
+        //Indice objeto a modificar
+        const index = productos.findIndex(producto => producto === productoAModificar)
+
+        const { title, description, code, price, status, stock, category, thumbnails } = newProd;
+
+        productoAModificar.title = title;
+        productoAModificar.description = description;
+        productoAModificar.code = code;
+        productoAModificar.price = price;
+        productoAModificar.status = status;
+        productoAModificar.stock = stock;
+        productoAModificar.category = category;
+        productoAModificar.thumbnails = thumbnails;
+
+        productos.splice(index, 1, productoAModificar);
+        await fs.promises.writeFile(this.path, JSON.stringify(productos, 'utf-8'))
+
+        return productoAModificar
+    }
+
+    async getById(id) {
+        let objId = parseInt(id)
+        const objs = await this.getProduct()
+        const obj = objs.find(o => o.id === objId);
+        return obj
+    }
+
+    async deleteProduct(id) {
+        const products = await this.getProduct();
+        const productIndex = products.findIndex((product) => product.id === parseInt(id))
+        if (productIndex === -1) {
+            return id
+        }
+        products.splice(productIndex, 1);
+        await fs.promises.writeFile(this.path, JSON.stringify(products, null, '\t'))
+        return products;
+    }
+
+    async deleteAll() {
+        await fs.promises.writeFile(`./${this.path}`, '');
+        console.log('Borrar todos los productos')
     }
 }

@@ -2,10 +2,10 @@ import { Router } from 'express';
 
 const router = Router();
 
-const productManager = new productManager();
+const ProductManager = new productManager();
 
 router.get('/', async (req,res)=>{
-    const products = await productManager.getProducts();
+    const products = await ProductManager.getProducts();
     res.send(products)
 })
 
